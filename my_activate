@@ -1,0 +1,31 @@
+# this path code sets some environmental variables that can be accessed from other shell scripts
+# For this code to run, one must run it as:
+# $ source my_activate
+
+#------------------------------------
+# Bash
+# to convert the shell to bash write:
+# $ bash
+# $ . my_activate
+#-------------------------------------
+
+MY_DATA_DIR=/home/namdi/Documents/School/UNC/Parallel_Time/Data
+MR_NEAR=1	# the Multirate FMM used in PFASST
+MR_FMM=2	# the FMM calculating far and local field separately 
+FMM=3		# the full FMM
+DIRECT=4	# the direct solver
+
+# for compiling
+LD_LIBRARY_PATH=/home/namdi/Documents/School/UNC/Parallel_Time/Code/fpfasst/libpfasst/examples/electro/lib
+
+PYTHONPATH=/home/namdi/Documents/School/UNC/Parallel_Time/Code/fpfasst/libpfasst
+
+export MY_DATA_DIR
+export MR_NEAR
+export MR_FMM
+export FMM
+export DIRECT
+
+export LD_LIBRARY_PATH
+export PYTHONPATH	
+# if this does not work do: export PYTHONPATH=/path/to/libpfasst instead of breaking the command up into two

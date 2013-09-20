@@ -1,0 +1,6 @@
+# This tells git to ignore the following types of files when uploading to the repository.
+*~
+build/
+main.exe
+*.pyc
+*.so

@@ -1,0 +1,30 @@
+ON ANY MACHINE:
+
+1. Go to /libfasst/Makefile
+  Change the LIBFPASST library path to wherever it is in killdevil.
+  Chagne the PFDEV to the directory that containst libpfasst
+
+2. Go to libfpasst/src/pf_dtype.f90
+  Add this to the declaration of pf_pfasst_t
+
+  !
+  ! Namdi: I added the ctx_char to hold extra data
+  !
+  character(len=512) :: ctx_char = ""
+
+3. $ . my_activate 
+  Make sure the variables are pointing to the correct directories
+
+ON KILLDEVIL:
+
+
+1. Make sure you are using an INTEL compiler with mvapich
+
+2. Create a makefile.killdevil.defs file with these contents:
+  FFLAGS= -module build -g -cpp #-fast (optional for optimization)
+
+3. $ . my_activate
+  Make sure the variables are pointing to the correct directories
+
+
+Optional: Do make gcc47 in libpfasst to get the gcc4.7 compiler (If you need it). See other examples in libfasst/Makefile.external
