@@ -9,16 +9,24 @@
 # $ . my_activate
 #-------------------------------------
 
+# the data directory is machine specific
 MY_DATA_DIR=/home/namdi/Documents/School/UNC/Parallel_Time/Data
+
+# solvers
 MR_NEAR=1	# the Multirate FMM used in PFASST
 MR_FMM=2	# the FMM calculating far and local field separately 
 FMM=3		# the full FMM
 DIRECT=4	# the direct solver
 
-# for compiling
-LD_LIBRARY_PATH=/home/namdi/Documents/School/UNC/Parallel_Time/Code/fpfasst/libpfasst/examples/electro/lib
+# the directory for libpfasst
+LIBPFASST=../libpfasst
 
+# for compiling
+#LD_LIBRARY_PATH=/home/namdi/Documents/School/UNC/Parallel_Time/Code/fpfasst/libpfasst/examples/electro/lib
 PYTHONPATH=/home/namdi/Documents/School/UNC/Parallel_Time/Code/fpfasst/libpfasst
+
+#LD_LIBRARY_PATH=$(pwd)/lib
+#PYTHONPATH=${LIBPFASST}
 
 export MY_DATA_DIR
 export MR_NEAR

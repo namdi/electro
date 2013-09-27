@@ -69,7 +69,7 @@ def parse_cmd_line():
     nthreads = int(options.nthreads)  
     
   if options.distribution is None:
-    distribution = 2
+    distribution = 0
   else:
     distribution = int(options.distribution)
   

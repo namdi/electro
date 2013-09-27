@@ -2,7 +2,18 @@
 ! Simple example of using LIBPFASST.
 ! This is based off of the main function from mpi-ndarray
 !
+! To run the pfasst code:
+!
+! read the integer command line parameters in the following order:
+! nthreads, solver, accuracy, iterations, nlevs, fnodes, indir, outdir 
 
+! To run:
+! mpirun -n 8./main.exe 4 $FMM 3 5 2 5 $MY_DATA_DIR/test/t_0 $MY_DATA_DIR/test
+!
+!	MPI threads: 8	OpenMP threads/ MPI node: 4	solver: $FMM
+! 	accuracy: 3	iterations: 5	nlevs: 2	fine nodes: 5
+!	input directory: $MY_DATA_DIR/test/t_0		output directory: $MY_DATA_DIR/test
+!
 !===============================================
 ! Function declarations
 !===============================================
@@ -142,19 +153,19 @@ program main
 
   outdir = ""
 
-  !call parse_cmd_line(nthreads, accuracy, solver, iterations, nlevs, fnodes, indir, outdir)
+  call parse_cmd_line(nthreads, accuracy, solver, iterations, nlevs, fnodes, indir, outdir)
   !call probin_init('/home/namdi/Documents/School/UNC/Parallel_Time/Code/fpfasst/PFASST/examples/electro/probin.nml')  
 
   ! for the debugger
-  nthreads 	= 4
-  solver 	= 3
-  accuracy 	= 3
-  iterations 	= 4
-  nlevs		= 2
-  fnodes	= 5
+  !nthreads 	= 4
+  !solver 	= 3
+  !accuracy 	= 3
+  !iterations 	= 4
+  !nlevs		= 2
+  !fnodes	= 5
 
-  indir = "/home/namdi/Documents/School/UNC/Parallel_Time/Data/test/t_0"
-  outdir = "/home/namdi/Documents/School/UNC/Parallel_Time/Data/test"
+  !indir = "/home/namdi/Documents/School/UNC/Parallel_Time/Data/test/t_0"
+  !outdir = "/home/namdi/Documents/School/UNC/Parallel_Time/Data/test"
   
   allocate(nvars(nlevs))
   allocate(nnodes(nlevs))

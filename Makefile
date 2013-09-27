@@ -1,7 +1,6 @@
 #
-# Makefile for electro example (bassed of off mpi-advection example).  This Makefile builds LIBPFASST
-# inplace (instead of using the static library form of LIBPFASST) as
-# well as the application specific code in the src directory.
+# Makefile for electro example (bassed of off mpi-advection example).  This Makefile builds the 
+# electro (Laplace/ Coulomb potential)solver to be used with pfasst (via libpfasst)
 #
 
 LIBPFASST=../libpfasst

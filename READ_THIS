@@ -1,30 +1,103 @@
-ON ANY MACHINE:
+This README shows how to use the following  aspects of pfasst:
 
-1. Go to /libfasst/Makefile
+  1. how to COMPILE libpfasst (the fortran pfasst library)
+  2. how to COMPILE the FMM + executable (electro and ./main.exe, respectively)
+  3. how to RUN pfasst
+  4. how to display output
+  5. how to run convergence tests
+
+#--------------------------------------------------
+# How to COMPILE libpfasst and electro
+#--------------------------------------------------
+
+#
+# ON ANY MACHINE:
+#
+
+1. Go to /libpfasst/Makefile
   Change the LIBFPASST library path to wherever it is in killdevil.
   Chagne the PFDEV to the directory that containst libpfasst
 
-2. Go to libfpasst/src/pf_dtype.f90
-  Add this to the declaration of pf_pfasst_t
+2. Run makefile in libpfasst
 
-  !
-  ! Namdi: I added the ctx_char to hold extra data
-  !
-  character(len=512) :: ctx_char = ""
+3. Go to /electro
 
-3. $ . my_activate 
+4. $ . my_activate 
   Make sure the variables are pointing to the correct directories
 
-ON KILLDEVIL:
+5. Run makefile in electro
 
+#
+# ON KILLDEVIL:
+#
 
 1. Make sure you are using an INTEL compiler with mvapich
 
-2. Create a makefile.killdevil.defs file with these contents:
+2. Go to /libpfasst directory
+
+3. Create a makefile.killdevil.defs file with these contents:
   FFLAGS= -module build -g -cpp #-fast (optional for optimization)
 
-3. $ . my_activate
+4. Run makefile
+
+5. Go to /electro directory
+
+6. In /electro run 
+  $ . my_activate
   Make sure the variables are pointing to the correct directories
 
 
 Optional: Do make gcc47 in libpfasst to get the gcc4.7 compiler (If you need it). See other examples in libfasst/Makefile.external
+
+#--------------------------------------------------
+# How to RUN the pfasst + FMM
+#--------------------------------------------------
+
+1. Go to /electro/myanalysis
+
+2. Create the initial condition
+    $ python data_script.py -d 2 -b 20 -n 2000 -m 3 -o $MY_DATA_DIR/test
+
+    d: distribution of initial condition dis
+    b: number of timesteps
+    n: number of source particles
+    m: number of target particles (tracer particles)
+    o: The output directory. The initial data will be stored in $MY_DATA_DIR/test/t_0
+
+3. Go to /electro ($ cd ..)
+
+4. Run pfasst
+
+Running serial SDC (i.e pfasst with 1 level):
+    
+    $ mpirun -n 1 ./main.exe 4 $FMM 3 1 9 $MY_DATA_DIR/test/t_0 $MY_DATA_DIR/test
+
+Running pfasst.
+
+    $ mpirun -n 8 ./main.exe 4 $FMM 3 2 5 $MY_DATA_DIR/test/t_0 $MY_DATA_DIR/test
+
+    Command Arguments (have to be in this specific order):
+    nthreads		solver			accuracy	level	fine nodes
+    input directory	output directory
+
+    mpirun -n 8: 		run using 8 MPI nodes
+    nthreads: 4 		run using 4 OpemMP nodes per MPI node. Thus, the pfasst example is running 8 groups of 4 nodes.
+    solver: $FMM		use the full FMM solver
+    accuracy: 3			the accuracy of the FMM solver
+    iterations: 5		the number of PFASST iterations is 5
+    nlevels: 2			the number of pfasst levels is 2
+    fine nodes: 9		The number of fine nodes per timestep. Useful for running serial SDC only. In this case it is 9.				
+    $MY_DATA_DIR/test/t_0	the input directory, i.e. the initial condition directory
+    $MY_DATA_DIR/test		the output directory (this is optional)
+    
+
+#--------------------------------------------------
+# How to view output
+#--------------------------------------------------
+
+
+
+
+#--------------------------------------------------
+# How to run convergence tests
+#--------------------------------------------------

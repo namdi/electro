@@ -37,8 +37,8 @@ solver 		= DIRECT
 accuracy	= 3
 distribution 	= -1 
 
-indir 		= "/home/namdi/Documents/School/UNC/Parallel_Time/Data/test" 
-outdir		="/home/namdi/Documents/School/UNC/Parallel_Time/Data/test"
+indir 		= "/home/namdi/Documents/School/UNC/Parallel_Time/Data/fmm" 
+outdir		="/home/namdi/Documents/School/UNC/Parallel_Time/Data/fmm"
 
 # run the pfasst solution
 run_pfsol.run(nMPI, nthreads, nsources, ntargets, nsteps, niters, nlevs, fnodes, solver, accuracy, distribution, indir, outdir)
