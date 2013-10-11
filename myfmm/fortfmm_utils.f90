@@ -1,7 +1,6 @@
-
-
-  
-
+  !
+  ! Create the tree
+  !
 
   subroutine create_tree(ier, iprec, source, nsource, target, ntarget, center, laddr, nlev, nboxes, &
 			nbox, epsfmm, lused7, iisource, iwlists, lwlists, iitarget, size, wlists, ntot)
@@ -82,7 +81,9 @@
   end subroutine create_tree
 
 
+  !    
   ! this function finds ntot, the length of wlists when we actually create the tree
+  !
   subroutine pre_create_tree(ier, iprec, source, nsource, target, ntarget, nlev, &
 			nbox, ntot)
     ! This method is a snipet of lfmm3dparttarg() in lfmm3dpart.f
@@ -153,6 +154,9 @@
   end subroutine pre_create_tree
 
 
+  !
+  ! this function sets the fmm tolerance
+  !
   subroutine set_fmmtolerance(iprec, epsfmm) 
 
     implicit none
@@ -176,7 +180,10 @@
 
   end subroutine set_fmmtolerance
 
+  !
   ! this sets the maximum number of sources per box 
+  !
+
   subroutine set_sources_per_box(iprec, nsource, ntarget, nbox)
   !set criterion for box subdivision (number of sources per box)
 
@@ -200,7 +207,10 @@
 
   end subroutine set_sources_per_box
 
+  !
   ! This actually runs the FMM
+  !
+
   subroutine fmm(ier, iprec, nsource, source, ifcharge, charge, ifdipole, dipstr, dipvec, &
 		ifpot, pot, iffld, fld, ntarget, target, ifpottarg, pottarg, iffldtarg, &
 		fldtarg, laddr, nlev, nboxes, nbox, epsfmm, lused7, nthread, iisource, &
@@ -343,7 +353,7 @@
         !complex *16 charge(nsource)
         !complex *16 dipstr(nsource)
         !dimension dipvec(3,nsource)
-        complex *16 ima
+        complex *16 :: ima
         !complex *16 pot(nsource)
         !complex *16 fld(3,nsource)
         !dimension target(3,nsource)
@@ -369,7 +379,7 @@
         real *8, allocatable :: w(:)
         !real *8, allocatable :: wlists(:) Already declared up top
         real *8, allocatable :: wrmlexp(:)
-        complex *16 ptemp,ftemp(3)
+        complex *16 :: ptemp,ftemp(3)
        
         data ima/(0.0d0,1.0d0)/
        
@@ -638,11 +648,10 @@
 	  potsrc_far, fldsrc_far, potsrc_mpole, fldsrc_mpole, &
 	  potsrc_near, fldsrc_near, &
 	  pottarg_far, fldtarg_far, pottarg_mpole, &
-	  fldtarg_mpole, pottarg_near, fldtarg_near, ifnear_only)
-	!write(*,*) "after calc, fld(1,1): ", fld(1,1)
+	  fldtarg_mpole, pottarg_near, fldtarg_near, ifnear_only)	
 
         t2=second()
-!$        t2=omp_get_wtime()
+!!$        t2=omp_get_wtime()
 !        if( ifprint .eq. 1 ) call prin2('time in fmm main=*',t2-t1,1)
 
 !       parameter ier from targmain routine is currently meaningless, reset to 0
@@ -767,22 +776,23 @@
 	  endif
 
 	endif
-	!----------------------------------------------------------
-	
-	!write(*,*) "leaving fmm() in fortfmm_utils"
+	!----------------------------------------------------------	
 	
         return
         
 
   end subroutine fmm
 
+  !
+  ! This is the direct solver
+  !
 
   subroutine direct(nsource, source, ifcharge,charge, ifdipole, dipstr, dipvec, & 
 			  ifpot, pot, iffld, fld, ntarget, target, ifpottarg, pottarg, &
-			  iffldtarg, fldtarg, nthreads)
+			  iffldtarg, fldtarg, nthread)
 
 	! Namdi: this is based on l3dpartdirect() of lfmm3dpart.f
-	! Namdi: I added the nthreads and made it able to handle an arbitrary amount
+	! Namdi: I added the nthread and made it able to handle an arbitrary amount
 	! of threads
 	! Namdi: Did some syntax editting so the code will work
 	! Namdi: changed the declaring of function arguments
@@ -835,9 +845,9 @@
 	!-------------------------------------------------
 	
 	! when the above line has "integer*4, intent(in), value :: ..." the code
-	! starts missbehaving. For example, it will make nthreads = -12344 and so on.
+	! starts missbehaving. For example, it will make nthread = -12344 and so on.
 	integer, intent(in) :: nsource, ifcharge, ifdipole, ifpot, iffld, ifpottarg, &
-					 iffldtarg, nthreads
+					 iffldtarg, nthread
 
 	real *8, intent(in) :: source(3, nsource), dipvec(3, nsource), target(3, ntarget)
 
@@ -855,7 +865,7 @@
         complex *16 ptemp,ftemp(3)
 !
 
-	call omp_set_num_threads(nthreads)
+	call omp_set_num_threads(nthread)
 
 	! reset the potential and field 
 	!if (ifpot .eq. 1) then
@@ -900,7 +910,7 @@
 	  
 	  ! Namdi: testing
 	  !if (j .eq. 1) then
-	    !write(*,*) "nthreads: ", omp_get_num_threads()
+	    !write(*,*) "nthread: ", omp_get_num_threads()
 	  !end if
 
         do 6150 i=1,nsource
@@ -964,4 +974,914 @@
 !
   end subroutine direct
 
+  !
+  ! This is the heart of the FMM
+  !
+  subroutine my_lfmm3dparttargmain( ier,iprec, ifevalfar,ifevalloc, &
+    nsource, sourcesort, isource, ifcharge,chargesort, &
+    ifdipole, dipstrsort, dipvecsort, ifpot, pot, iffld,& 
+    fld, ntarget, targetsort, itarget, ifpottarg, pottarg, &
+    iffldtarg, fldtarg, epsfmm, iaddr, rmlexp, mptemp, lmptemp, &
+    nboxes, laddr, nlev, scale, bsize, nterms, wlists, lwlists, &
+    nthread, ifpotsrc_far, ifpotsrc_mpole, ifpotsrc_near, &
+    iffldsrc_far, iffldsrc_mpole, iffldsrc_near, ifpottarg_far, &
+    ifpottarg_mpole, ifpottarg_near, iffldtarg_far, iffldtarg_mpole, iffldtarg_near,&
+    potsrc_far, fldsrc_far, potsrc_mpole, &
+    fldsrc_mpole, potsrc_near, fldsrc_near, &
+    pottarg_far, fldtarg_far, pottarg_mpole, &
+    fldtarg_mpole, pottarg_near,&
+    fldtarg_near, ifnear_only )
 
+    ! Namdi added this:
+    use omp_lib
+
+    implicit real *8 (a-h,o-z)
+
+    integer, intent(in) 	:: isource(*), itarget(*), iaddr(2, nboxes), laddr(2, 200)
+    real *8, intent(in)		:: sourcesort(3, *), targetsort(3,*), dipvecsort(3,*)
+    complex *16, intent(in) 	:: chargesort(*), dipstrsort(*)        
+    
+    complex *16, intent(out) 	:: pot(*), fld(3,*), pottarg(*), fldtarg(3,*)    
+    real *8, intent(out) 	:: wlists(*)
+    
+    real *8, intent(in) 	:: rmlexp(*)
+    complex *16, intent(in) 	:: mptemp(lmptemp)
+    dimension timeinfo(10)
+    dimension center(3)    
+    dimension scale(0:200)
+    dimension bsize(0:200)
+    dimension nterms(0:200)
+    dimension list(10000)
+    complex *16 		:: ptemp,ftemp(3)
+    integer box(20)
+    dimension center0(3),corners0(3,8)
+    integer box1(20)
+    dimension center1(3),corners1(3,8)
+    dimension itable(-3:3,-3:3,-3:3)
+    dimension wlege(40000)
+    dimension nterms_eval(4,0:200)
+
+    complex *16 :: ima
+!	Namdi: added the following:
+    integer :: nthread, ifnear_only
+    integer :: ifpotsrc_far, ifpotsrc_mpole, ifpotsrc_near
+    integer :: iffldsrc_far, iffldsrc_mpole, iffldsrc_near
+    integer :: ifpottarg_far, ifpottarg_mpole, ifpottarg_near
+    integer :: iffldtarg_far, iffldtarg_mpole, iffldtarg_near
+	
+
+    ! multirate FMM flags for the potential and fields
+    integer :: ifpot_m, ifpottarg_m
+    integer :: iffld_m, iffldtarg_m
+
+    complex *16 :: potsrc_far(*), fldsrc_far(3,*) 
+    complex *16 :: potsrc_mpole(*), fldsrc_mpole(3,*)
+    complex *16 :: potsrc_near(*), fldsrc_near(3,*)
+
+    complex *16 :: pottarg_far(*), fldtarg_far(3,*) 
+    complex *16 :: pottarg_mpole(*), fldtarg_mpole(3,*)
+    complex *16 :: pottarg_near(*), fldtarg_near(3,*)
+
+    integer :: i, id, procs ! id is for testing
+
+    data ima/(0.0d0,1.0d0)/
+
+!
+!
+!     INPUT PARAMETERS:
+!
+!     iprec        precision flag (see above)   ELIMINATE???
+!     ifevalfar    far field flag (1 means compute far field, 
+!                                  else dont)
+!     ifevalloc    local field flag (1 means compute local field, 
+!                                    else dont)
+!     nsource      number of sources
+!     sourcesort   sorted source coordinates
+!     isource      sorting index for sources
+!     ifcharge     flag indicating potential includes contribution
+!                  from charges
+!     chargesort   sorted charge values
+!     ifdipole     flag indicating potential includes contribution
+!                  from dipoles
+!     dipstrsort   sorted dipole strengths
+!     dipvecsort   sorted dipole orientation vectors
+!     ifpot        potential flag (1 => compute, else do not)
+!     iffld        field flag (1 => compute, else do not)
+!     ntarget      number of targets
+!     targetsort   sorted array of target locations
+!     itarget      sorting index for targets
+!     ifpottarg    target potential flag (1 => compute, else do not)
+!     iffldtarg    target field flag (1 => compute, else do not)
+!     epsfmm       FMM tolerance
+!     iaddr        iaddr(2,nboxes) array points to mpole/local
+!                     expansions for each box
+!     rmlexp       workspace to contain mpole/local expansions.
+!     nboxes       number of boxes in FMM hierarchy
+!     laddr        indexing array for FMM data structure
+!     nlev         number of levels in FMM hierarchy
+!     scale        array of scaling parameters
+!     bsize        box dimension for FMM
+!     nterms       array of nterms needed at each level
+!     wlists       FMM data structure (real array)
+!     lw           length of wlists
+!
+!
+!     OUTPUT PARAMETERS:
+!
+!     pot          surface potential (if ifpot=1)
+!     fld          surface field=-gradient(potential) (if iffld=1)
+!     pottarg      target potential (if ifpot=1)
+!     fldtarg      target field=-gradient(potential) (if iffld=1)
+!     ier          error return code
+!                  ier = 0    =>   normal execution
+!                  ier = 4    =>   cannot allocate tree workspace
+!                  ier = 8    =>   cannot alocate bulk FMM workspace
+!                  ier = 16   =>   cannot allocate mpole exp workspace
+!
+!
+!     ifprint is an internal information printing flag. 
+!     Suppressed if ifprint=0.
+!     Prints timing breakdown and other things if ifprint=1.
+!     Prints timing breakdown, list information, and other things if ifprint=2.
+!       
+    !=========================================
+    ! Namdi: Testing
+    !========================================
+    !write(*,*) "In lfmm3dparttargmain() in lfmm3dpart.f"
+
+!   Namdi: I added this
+    call omp_set_num_threads(nthread)
+
+    ifprint=0
+	
+    ifpot_m=iunion(ifpotsrc_far,ifpotsrc_mpole,ifpotsrc_near)
+    ifpottarg_m=iunion(ifpottarg_far,ifpottarg_mpole,ifpottarg_near)
+
+    iffld_m=iunion(iffldsrc_far,iffldsrc_mpole,iffldsrc_near)
+    iffldtarg_m=iunion(iffldtarg_far,iffldtarg_mpole,iffldtarg_near)
+
+!	
+!     
+!    ... set the potential and field to zero
+!
+!    --------------------------
+!    Namdi: Can make this parallel. Not optimized in Cache
+!    ----------------------------
+	
+    !
+    ! For the Full FMM
+    !
+
+    do i=1,nsource
+
+      if( ifpot .eq. 1 .or. ifnear_only .eq. 1) then 
+	pot(i)=0
+      endif
+
+      if( iffld .eq. 1 .or. ifnear_only .eq. 1) then
+	fld(1,i)=0
+	fld(2,i)=0
+	fld(3,i)=0
+      endif
+    enddo
+
+    do i=1,ntarget
+      if( ifpottarg .eq. 1) pottarg(i)=0
+      if( iffldtarg .eq. 1) then
+	fldtarg(1,i)=0
+	fldtarg(2,i)=0
+	fldtarg(3,i)=0
+      endif
+    enddo
+
+    !
+    ! For the FMM near-field only
+    !
+
+    do i=1,nsource
+
+      if(ifnear_only .eq. 1 .and. ifpotsrc_near .eq. 1) then 
+	potsrc_near(i)=0
+      endif
+
+      if( ifnear_only .eq. 1 .and. iffldsrc_near .eq. 1) then
+	fldsrc_near(1,i)=0
+	fldsrc_near(2,i)=0
+	fldsrc_near(3,i)=0
+      endif
+
+    enddo
+
+    do i=1,ntarget
+
+      if(ifnear_only .eq. 1 .and. ifpottarg_near .eq. 1) then 
+	pottarg_near(i)=0
+      endif
+
+      if( ifnear_only .eq. 1 .and. iffldtarg_near .eq. 1) then
+	fldtarg_near(1,i)=0
+	fldtarg_near(2,i)=0
+	fldtarg_near(3,i)=0
+      endif
+
+    enddo
+
+    !
+    ! For the FMM Separated 
+    !
+  
+    do i=1,nsource
+
+      if(ifpotsrc_near .eq. 1) potsrc_near(i)=0
+      if(ifpotsrc_far .eq. 1) potsrc_far(i)=0
+
+      if(iffldsrc_near .eq. 1) then
+	fldsrc_near(1,i)=0
+	fldsrc_near(2,i)=0
+	fldsrc_near(3,i)=0
+      endif
+
+      if(iffldsrc_far .eq. 1) then
+	fldsrc_far(1,i)=0
+	fldsrc_far(2,i)=0
+	fldsrc_far(3,i)=0
+      endif
+
+    enddo
+
+    do i=1,ntarget
+
+      if(ifpottarg_near .eq. 1) pottarg_near(i)=0
+      if(ifpottarg_far .eq. 1) pottarg_far(i)=0
+
+      if(iffldtarg_near .eq. 1) then
+	fldtarg_near(1,i)=0
+	fldtarg_near(2,i)=0
+	fldtarg_near(3,i)=0
+      endif
+
+      if(iffldtarg_far .eq. 1) then
+	fldtarg_far(1,i)=0
+	fldtarg_far(2,i)=0
+	fldtarg_far(3,i)=0
+      endif
+
+    enddo
+
+    do i=1,10
+      timeinfo(i)=0
+    enddo
+
+    !
+    ! Start the far-field calculations
+    !
+
+    if( ifevalfar .eq. 0 ) goto 8000
+       
+!
+!       ... initialize Legendre function evaluation routines
+!
+      nlege=100
+      lw7=40000
+      call ylgndrfwini(nlege,wlege,lw7,lused7)
+!
+      do i=0,nlev
+	do itype=1,4
+	  call l3dterms_eval(itype, epsfmm, nterms_eval(itype,i), ier)
+        enddo
+      enddo
+!
+      if (ifprint .ge. 2) then
+	call prinf('nterms_eval=*',nterms_eval,4*(nlev+1))
+      endif
+
+      !=========================================
+      ! Namdi: Testing
+      !========================================      
+!    
+!       ... set all multipole and local expansions to zero
+!
+      !$omp parallel do default(shared) &
+      !$omp private(ibox,box,center0,corner0,level, id, i_temp) &
+      !$omp schedule(dynamic)
+      do ibox = 1,nboxes
+		
+	call d3tgetb(ier,ibox,box,center0,corners0,wlists)
+        level=box(1)
+        call l3dzero(rmlexp(iaddr(1,ibox)),nterms(level))
+        call l3dzero(rmlexp(iaddr(2,ibox)),nterms(level))	
+      enddo
+      !$omp end parallel do         
+      
+      !=========================================
+      ! Namdi: Testing
+      !========================================
+
+        if (ifprint .ge. 1) call prinf('=== STEP 1 (form mp) ====*',i,0)
+        t1=second()
+!        t1=omp_get_wtime()
+!
+!       ... step 1, locate all charges, assign them to boxes, and
+!       form multipole expansions
+!
+!!!        do 1200 ibox=1,nboxes
+!!!        do 1300 ilev=3,nlev+1
+
+      !$omp parallel do default(shared) &
+      !$omp private(ibox,box,center0,corners0,level,npts,nkids,radius) &
+      !$omp private(ier,i,j,ptemp,ftemp,cd) &
+      !$omp schedule(dynamic)      
+
+      do 1200 ibox=1,nboxes
+!!!        do 1200 ibox=laddr(1,ilev),laddr(1,ilev)+laddr(2,ilev)-1	
+
+	call d3tgetb(ier,ibox,box,center0,corners0,wlists)
+        call d3tnkids(box,nkids)
+
+        level=box(1)
+
+        if (ifprint .ge. 2) then
+	  call prinf('ibox=*',ibox,1)
+	  call prinf('box=*',box,20)
+	  call prinf('nkids=*',nkids,1)
+	endif
+
+        if (nkids .eq. 0) then
+	  ipts=box(14)
+!	  npts=box(15)
+!	  call prinf('ipts=*',ipts,1)
+!	  call prinf('npts=*',npts,1)
+	  npts=box(15)
+	  if (ifprint .ge. 2) then
+	    call prinf('npts=*',npts,1)
+	    call prinf('isource=*',isource(box(14)),box(15))
+	  endif
+	endif
+!
+!       ... prune all sourceless boxes
+!
+	if( box(15) .eq. 0 ) goto 1200
+!
+        if (nkids .eq. 0) then
+!
+!       ... form multipole expansions
+!
+	  radius = (corners0(1,1) - center0(1))**2
+	  radius = radius + (corners0(2,1) - center0(2))**2
+	  radius = radius + (corners0(3,1) - center0(3))**2
+	  radius = sqrt(radius)
+
+	  call l3dzero(rmlexp(iaddr(1,ibox)),nterms(level))
+
+	  if( ifcharge .eq. 1 ) then
+
+            call l3dformmp_add_trunc(ier,scale(level), &
+              sourcesort(1,box(14)),chargesort(box(14)), &
+              npts,center0, &
+              nterms(level),nterms_eval(1,level), &
+              rmlexp(iaddr(1,ibox)),wlege,nlege)        
+	  endif
+ 
+	  if (ifdipole .eq. 1 ) then
+
+            call l3dformmp_dp_add_trunc(ier,scale(level), &
+              sourcesort(1,box(14)), &
+              dipstrsort(box(14)),dipvecsort(1,box(14)), &
+              npts,center0,nterms(level),nterms_eval(1,level), &
+              rmlexp(iaddr(1,ibox)),wlege,nlege)            
+	  endif
+        endif
+!
+ 1200    continue      
+      !$omp end parallel do
+      
+ 1300    continue
+
+         t2=second()
+!!$        t2=omp_get_wtime()
+!!!        call prin2('time=*',t2-t1,1)
+         timeinfo(1)=t2-t1
+!       
+        if (ifprint .ge. 1) call prinf('=== STEP 2 (form lo) ====*',i,0)
+        t1=second()
+!!$        t1=omp_get_wtime()
+!
+!-----------------------------------------------------------------------
+!       Step 2: In the adaptive FMM, a large leaf node may need to interact
+!       with separated boxes at finer levels. This is called <list 3> in the
+!       FMM. One takes individual sources in the large leaf node and 
+!       maps them to local expansions in the target boxes.
+!-----------------------------------------------------------------------
+!      
+      !$omp parallel do default(shared) &
+      !$omp private(ibox,box,center0,corners0,level0,itype,list,nlist) &
+      !$omp private(jbox,box1,center1,corners1,level1,ifdirect3,radius) &
+      !$omp private(lused,ier,i,j,ptemp,ftemp,cd,ilist,npts)
+      !!!$omp schedule(dynamic)
+
+         do 3251 ibox=1,nboxes
+
+         call d3tgetb(ier,ibox,box,center0,corners0,wlists)
+
+!!!         if( box(15) .eq. 0 ) goto 3251
+
+         itype=4
+         call d3tgetl(ier,ibox,itype,list,nlist,wlists)
+         if (nlist .gt. 0) then 
+            if (ifprint .ge. 2) then
+               call prinf('ibox=*',ibox,1)
+               call prinf('list3=*',list,nlist)
+            endif
+         endif
+
+!       ... prune all sourceless boxes
+
+!!!         if( box(15) .eq. 0 ) nlist=0
+
+
+!       ... note that lists 3 and 4 are dual
+
+!       ... form local expansions for all boxes in list 3
+!       ... if target is childless, evaluate directly (if cheaper)
+!====================================================================================
+!	Maybe this should be calculated by the pottarg_far (farfield) no matter
+!	if the calculation is cheaper or not.
+!====================================================================================
+       
+!!!         call prinf('nlist3=*', nlist,1)
+         do 3250 ilist=1,nlist
+            jbox=list(ilist)
+            call d3tgetb(ier,jbox,box1,center1,corners1,wlists)
+        
+            npts=box1(15)            
+            if( npts .eq. 0 ) goto 3250
+
+            level0=box(1)
+            level1=box1(1)
+!
+!            ifdirect3 = 0
+!            if( box1(15) .lt. (nterms(level1)+1)**2/4 .and.
+!     $          box(15) .lt. (nterms(level1)+1)**2/4 ) ifdirect3 = 1
+!
+            ifdirect3 = 0
+
+            if( ifdirect3 .eq. 0 ) then
+
+               if( ifcharge .eq. 1 ) then
+
+               call l3dformta_add_trunc(ier,scale(level0), &
+                 sourcesort(1,box1(14)),chargesort(box1(14)), &
+                 npts,center0, &
+                 nterms(level0),nterms_eval(1,level0), &
+                 rmlexp(iaddr(2,ibox)),wlege,nlege)
+
+               endif
+
+               if( ifdipole .eq. 1 ) then
+
+               call l3dformta_dp_add_trunc(ier,scale(level0), &
+                 sourcesort(1,box1(14)),dipstrsort(box1(14)), &
+                 dipvecsort(1,box1(14)),npts,center0, &
+                 nterms(level0),nterms_eval(1,level0), &
+                 rmlexp(iaddr(2,ibox)),wlege,nlege)
+
+               endif
+
+            else
+
+            call lfmm3dpart_direct_targ(box1,box,sourcesort, &
+              ifcharge,chargesort,ifdipole,dipstrsort,dipvecsort, &
+              ifpot,pot,iffld,fld, &
+              targetsort,ifpottarg,pottarg,iffldtarg,fldtarg)
+	    !---------------------------------------------------------------
+	    ! Namdi: Added this to store the far interactions 
+	    !---------------------------------------------------------------
+	
+	    call lfmm3dpart_direct_targ(box1,box,sourcesort, &
+              	ifcharge,chargesort,ifdipole,dipstrsort,dipvecsort, &
+              	ifpotsrc_far,potsrc_far,iffldsrc_far, fldsrc_far, &
+              	targetsort,ifpottarg_far,pottarg_far, &
+     		iffldtarg_far,fldtarg_far)
+	    endif
+	    !----------------------------------------------------
+
+            !endif
+ 3250    continue
+
+ 3251    continue
+      !$omp end parallel do  
+      
+
+         t2=second()
+!!$        t2=omp_get_wtime()
+!!!        call prin2('time=*',t2-t1,1)
+         timeinfo(2)=t2-t1
+!
+!-----------------------------------------------------------------------
+!       Steps 3,4,5 are carried out by the routine lfmm3d_list2.
+!       Step 3 is the merging of multipole expansions at every level.
+!       Step 4 is the mapping of multipole expansions to local expansions
+!              using <list 2>.
+!       Step 5 is the recursive mapping of local expansions from parent to 
+!              child.
+!-----------------------------------------------------------------------
+!
+        if (ifprint .ge. 1) call prinf('=== STEPS 3,4,5 ====*',i,0)
+        ifprune_list2 = 1
+        if (ifpot.eq.1) ifprune_list2 = 0
+        if (iffld.eq.1) ifprune_list2 = 0
+
+	if (ifpot_m .eq. 1) ifprune_list2 = 0
+	if (iffld_m .eq. 1) ifprune_list2 = 0
+
+        call lfmm3d_list2 (bsize,nlev,laddr,scale,nterms,rmlexp,iaddr,epsfmm, &
+	    timeinfo,wlists,mptemp,lmptemp,ifprune_list2)
+!
+!
+!
+        if (ifprint .ge. 1) call prinf('=== STEP 6 (eval mp) ====*',i,0)
+        t1=second()
+!!$        t1=omp_get_wtime()
+!
+!-----------------------------------------------------------------------
+!       Step 6: In the adaptive FMM, a small leaf node may need to interact
+!       with separated boxes at coarser levels. This is the dual of 
+!       Step 2 and is called <list 4> in the FMM. 
+!       The multipole expansion for the small leaf node is evaluated directly
+!       at targets in the large target node.
+!-----------------------------------------------------------------------
+!
+	!$omp parallel do default(shared) &
+	!$omp private(ibox,box,center0,corners0,itype,list,nlist) &
+	!$omp private(jbox,box1,center1,corners1,level1,ifdirect4,radius) &
+	!$omp private(lused,ier,i,j,ptemp,ftemp,cd,ilist,level)
+	!!!!!!$omp schedule(dynamic)
+         do 3252 ibox=1,nboxes
+
+         call d3tgetb(ier,ibox,box,center0,corners0,wlists)
+
+!!!         if( box(15) .eq. 0 ) goto 3252
+
+         itype=3
+         call d3tgetl(ier,ibox,itype,list,nlist,wlists)
+         if (nlist .gt. 0) then 
+            if (ifprint .ge. 2) then
+               call prinf('ibox=*',ibox,1)
+               call prinf('list4=*',list,nlist)
+            endif
+         endif
+
+!       ... prune all sourceless boxes
+
+!!!         if( box(15) .eq. 0 ) nlist=0
+
+!       ... note that lists 3 and 4 are dual
+
+
+!       ... evaluate multipole expansions for all boxes in list 4 
+!       ... if source is childless, evaluate directly (if cheaper)
+
+!!!         call prinf('nlist4=*', nlist,1)
+         do ilist=1,nlist
+            jbox=list(ilist)
+            call d3tgetb(ier,jbox,box1,center1,corners1,wlists)
+
+            level=box1(1)
+
+!            ifdirect4 = 0
+
+!            if (box1(15) .lt. (nterms(level)+1)**2/4 .and.
+!     $         box(15) .lt. (nterms(level)+1)**2/4 ) ifdirect4 = 1
+
+!           for future optimization - here, we just evaluate the 
+!           multipole expansion, regardless of the number of sources
+!           in the source box.
+
+            ifdirect4 = 0
+
+            if (ifdirect4 .eq. 0) then
+
+!	    Namdi: Evaluate multipole expansion for the sources
+
+	      if( box(15) .gt. 0 ) then
+		call l3dmpevalall_trunc(scale(level),center1, &
+              	rmlexp(iaddr(1,jbox)), &
+              	nterms(level),nterms_eval(1,level), &
+              	sourcesort(1,box(14)),box(15), &
+              	ifpot,pot(box(14)), &
+              	iffld,fld(1,box(14)), &
+              	wlege,nlege,ier)
+	      endif
+
+!	    Namdi: Evaluate multipole expansion for the targets
+
+	      if( box(17) .gt. 0 ) then
+		call l3dmpevalall_trunc(scale(level),center1, &
+              	rmlexp(iaddr(1,jbox)), &
+              	nterms(level),nterms_eval(1,level), &
+              	targetsort(1,box(16)),box(17), &
+              	ifpottarg,pottarg(box(16)), &
+              	iffldtarg,fldtarg(1,box(16)), &
+              	wlege,nlege,ier)
+	      endif
+
+	    else !if( ifdirect4 .gt. 0)
+            
+	      call lfmm3dpart_direct_targ(box1,box,sourcesort, &
+              ifcharge,chargesort,ifdipole,dipstrsort,dipvecsort, &
+              ifpot,pot,iffld,fld, &
+              targetsort,ifpottarg,pottarg,iffldtarg,fldtarg)	    
+
+            endif !THIS endif is for if(direct .eq. 4)
+
+!---------------------------------------------------------------------
+!234567	Namdi: I added this for testing the solver
+!	changed the potentials and fields to the ones only designated
+!	for the multipole interaction
+!	lfmm3dpart_direct_targ changes the pot/field and pottarg/fldtarg
+!	Redo the potential and field calculations with mypot_temp and myfld_temp
+!	everytime the actual potential and field changes change the respective
+!	temporary variables.
+!------------------------------------------------------------------------------------
+	    if (ifdirect4 .eq. 0) then
+
+	      ! Namdi: Evaluate multirate multipole expansion for the sources
+	      if( box(15) .gt. 0 ) then
+		
+               call l3dmpevalall_trunc(scale(level),center1, &
+		rmlexp(iaddr(1,jbox)), &
+		nterms(level),nterms_eval(1,level), &
+		sourcesort(1,box(14)),box(15), &
+		ifpotsrc_far, potsrc_far(box(14)), &
+		iffldsrc_far, fldsrc_far(1,box(14)), &
+		wlege,nlege,ier)
+	      endif
+
+	      ! Namdi: Evaluate multirate multipole expansion for the targets
+
+		if( box(17) .gt. 0 ) then
+              	 call l3dmpevalall_trunc(scale(level),center1, &
+              	 rmlexp(iaddr(1,jbox)), &
+              	 nterms(level),nterms_eval(1,level), &
+              	 targetsort(1,box(16)),box(17), &
+              	 ifpottarg_far,pottarg_far(box(16)), &
+              	 iffldtarg_far,fldtarg_far(1,box(16)), &
+              	 wlege,nlege,ier)
+		endif
+
+	    else ! if(iftest .eq. 1 .and. ifdirect4 .eq. 0)
+
+	      ! Namdi: evaulate multirate direct calculation
+	      
+	      call lfmm3dpart_direct_targ(box1,box,sourcesort, &
+              	 ifcharge,chargesort,ifdipole,dipstrsort,dipvecsort, &
+              	 ifpotsrc_far, potsrc_far,iffldsrc_far, &
+     		 fldsrc_far, targetsort,ifpottarg,pottarg_far, &
+     		 iffldtarg, fldtarg_far)
+
+	    endif !if (iftest .eq. 1. and. ifdirect4 .eq. 0)
+!-------------------------------------------------------------------
+        enddo
+ 3252   continue
+	!$omp end parallel do	
+
+        t2=second()
+!!$        t2=omp_get_wtime()
+!!!     call prin2('time=*',t2-t1,1)
+        timeinfo(6)=t2-t1
+!
+!-----------------------------------------------------------------------
+!       Step 7: Evaluate the local expansions for all relevant sources/targets.
+!-----------------------------------------------------------------------
+!
+        if (ifprint .ge. 1) call prinf('=== STEP 7 (eval lo) ====*',i,0)
+        t1=second()
+!!$        t1=omp_get_wtime()
+
+!       ... step 7, evaluate local expansions
+!      and all fields directly
+
+	!$omp parallel do default(shared) &
+	!$omp private(ibox,box,center0,corners0,level,npts,nkids,ier)
+	!!!!!!$omp schedule(dynamic)
+
+        do 6201 ibox=1,nboxes
+
+        call d3tgetb(ier,ibox,box,center0,corners0,wlists)
+        call d3tnkids(box,nkids)
+
+        if (ifprint .ge. 2) then
+           call prinf('ibox=*',ibox,1)
+           call prinf('box=*',box,20)
+           call prinf('nkids=*',nkids,1)
+        endif
+
+        if (nkids .eq. 0) then
+            npts=box(15)
+            if (ifprint .ge. 2) then
+               call prinf('npts=*',npts,1)
+               call prinf('isource=*',isource(box(14)),box(15))
+            endif
+        endif
+
+        if (nkids .eq. 0) then
+
+!	------------------------------------------
+!	Namdi: Evaluate local expansions (potential)
+!	---------------------------------------------
+
+!       ... evaluate local expansions
+       
+        level=box(1)
+        npts=box(15)
+       
+        if (level .ge. 2) then
+
+	  call l3dtaevalall_trunc(scale(level),center0, &
+          rmlexp(iaddr(2,ibox)), &
+          nterms(level),nterms_eval(1,level), &
+          sourcesort(1,box(14)),box(15), &
+          ifpot,pot(box(14)), &
+          iffld,fld(1,box(14)), &
+          wlege,nlege,ier)
+
+	  call l3dtaevalall_trunc(scale(level),center0, &
+          rmlexp(iaddr(2,ibox)), &
+          nterms(level),nterms_eval(1,level), &
+          targetsort(1,box(16)),box(17), &
+          ifpottarg,pottarg(box(16)), &
+          iffldtarg,fldtarg(1,box(16)), &
+          wlege,nlege,ier)
+
+! ------------------------------------------------
+!	Namdi: for storing only the local expansion contribution	
+!----------------------------------------------------
+	    
+	  call l3dtaevalall_trunc(scale(level),center0, &
+          	rmlexp(iaddr(2,ibox)), &
+          	nterms(level),nterms_eval(1,level), &
+          	sourcesort(1,box(14)),box(15), &
+          	ifpotsrc_far,potsrc_far(box(14)), &
+          	iffldsrc_far,fldsrc_far(1,box(14)), &
+          	wlege,nlege,ier)
+
+	  call l3dtaevalall_trunc(scale(level),center0, &
+         	rmlexp(iaddr(2,ibox)), &
+          	nterms(level),nterms_eval(1,level), &
+          	targetsort(1,box(16)),box(17), &
+          	ifpottarg_far,pottarg_far(box(16)), &
+          	iffldtarg_far,fldtarg_far(1,box(16)), &
+          	wlege,nlege,ier)
+!--------------------------------------------------------
+
+!	for if (level. ge. 2) then
+        endif
+!	for if (nkids .eq. 9) then
+        endif
+!
+ 6201   continue
+	!$omp end parallel do
+	
+        t2=second()
+!!$        t2=omp_get_wtime()
+!!!     call prin2('time=*',t2-t1,1)
+        timeinfo(7)=t2-t1
+
+
+ 8000   continue
+
+	!
+	! Start the near-field clculations
+	!
+
+        if( ifevalloc .eq. 0 ) goto 9000
+ 
+        if (ifprint .ge. 1) call prinf('=== STEP 8 (direct) =====*',i,0)
+        t1=second()
+!!$        t1=omp_get_wtime()
+!
+!-----------------------------------------------------------------------
+!       Step 8: Evaluate direct interactions locally
+!-----------------------------------------------------------------------
+!
+	!$omp parallel do default(shared) &
+	!$omp private(ibox,box,center0,corners0,nkids,list,nlist,npts) &
+	!$omp private(jbox,box1,center1,corners1) &
+	!$omp private(ier,ilist,itype)
+	!!!!$omp schedule(dynamic)
+        do 6202 ibox=1,nboxes
+
+        call d3tgetb(ier,ibox,box,center0,corners0,wlists)
+        call d3tnkids(box,nkids)
+
+        if (ifprint .ge. 2) then
+           call prinf('ibox=*',ibox,1)
+           call prinf('box=*',box,20)
+           call prinf('nkids=*',nkids,1)
+        endif
+
+        if (nkids .eq. 0) then
+            npts=box(15)
+            if (ifprint .ge. 2) then
+               call prinf('npts=*',npts,1)
+               call prinf('isource=*',isource(box(14)),box(15))
+            endif
+        endif
+
+        if (nkids .eq. 0) then
+
+!       ... evaluate self interactions
+
+        if( box(15) .gt. 0 ) then
+	   
+	   ! calculate near-field interactions for regular FMM
+
+     	   call lfmm3dpart_direct_self(box,sourcesort, &
+          ifcharge,chargesort,ifdipole,dipstrsort,dipvecsort, &
+          ifpot,pot,iffld,fld, &
+          targetsort,ifpottarg,pottarg,iffldtarg,fldtarg)
+
+!---------------------------------------------------------------
+	!Namdi: To calculate the near-field interactions
+
+	  call lfmm3dpart_direct_self(box,sourcesort, &
+          	ifcharge,chargesort,ifdipole,dipstrsort,dipvecsort, &
+          	ifpotsrc_near, potsrc_near,iffldsrc_near, &
+     		fldsrc_near, targetsort,ifpottarg_near,pottarg_near, &
+     	   	iffldtarg_near,fldtarg_near)
+!---------------------------------------------------------------
+	endif !if (box(15) .gt. 0)
+
+!       ... retrieve list #1
+
+!       ... evaluate interactions with the nearest neighbours
+
+        itype=1
+        call d3tgetl(ier,ibox,itype,list,nlist,wlists)
+        if (ifprint .ge. 2) call prinf('list1=*',list,nlist)
+
+!       ... for all pairs in list #1, 
+!       evaluate the potentials and fields directly
+
+            do 6203 ilist=1,nlist
+               jbox=list(ilist)
+               call d3tgetb(ier,jbox,box1,center1,corners1,wlists)
+
+!       ... prune all sourceless boxes
+
+         if( box1(15) .eq. 0 ) goto 6203
+
+
+            call lfmm3dpart_direct_targ(box1,box,sourcesort, &
+              ifcharge,chargesort,ifdipole,dipstrsort,dipvecsort, &
+              ifpot,pot,iffld,fld, &
+              targetsort,ifpottarg,pottarg,iffldtarg,fldtarg)
+
+!---------------------------------------------------------------
+!	Namdi: This is for evaluating the local interations that 
+!	are solved directly
+!	This function changes the field and potential of the 
+!	sources.
+!-------------------------------------------------------
+	!Namdi: To calculate the near-field interactions
+
+	    call lfmm3dpart_direct_targ(box1,box,sourcesort, &
+              	ifcharge,chargesort,ifdipole,dipstrsort,dipvecsort, &
+              	ifpotsrc_near, potsrc_near,iffldsrc_near, &
+     		fldsrc_near, targetsort,ifpottarg_near, &
+     		pottarg_near, iffldtarg_near,fldtarg_near)
+!--------------------------------------------------------
+
+ 6203       continue
+        endif
+
+ 6202   continue
+	!$omp end parallel do
+	
+!!!        call prin2('inside fmm, pot=*',pot,2*nsource)
+
+
+        t2=second()
+!!$        t2=omp_get_wtime()
+!!!     call prin2('time=*',t2-t1,1)
+        timeinfo(8)=t2-t1
+
+ 9000   continue
+
+!!!        call prinf('=== DOWNWARD PASS COMPLETE ===*',i,0)
+
+        if (ifprint .ge. 1) call prin2('timeinfo=*',timeinfo,8)
+       
+        d=0
+        do i=1,8
+        d=d+timeinfo(i)
+        enddo
+       
+        if (ifprint .ge. 1) call prin2('sum(timeinfo)=*',d,1)
+
+        if (ifprint .ge. 1) call prinf('nboxes=*',nboxes,1)
+        if (ifprint .ge. 1) call prinf('nsource=*',nsource,1)
+        if (ifprint .ge. 1) call prinf('ntarget=*',ntarget,1)
+       
+        return
+        end

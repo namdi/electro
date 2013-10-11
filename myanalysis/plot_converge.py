@@ -18,11 +18,9 @@ import pf
 
 path = "/home/namdi/Documents/School/UNC/Parallel_Time/Data"
 
-#reference   = pf.io.read_avail(path + "/ref")
-#approximate = pf.io.read_avail(path + "/test")
-
-reference   = pf.io.read_avail(path + "/direct")
-approximate = pf.io.read_avail(path + "/fmm")
+#reference   = pf.io.read_avail(path + "/Results/Reference/2013_10_07")
+reference   = pf.io.read_avail(path + "/test_direct")
+approximate = pf.io.read_avail(path + "/test_fmm4")
 
 errs, steps, iters, levels = pf.convergence.errors(reference, approximate)
 

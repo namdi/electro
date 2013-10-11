@@ -153,15 +153,14 @@ program main
 
   outdir = ""
 
-  call parse_cmd_line(nthreads, accuracy, solver, iterations, nlevs, fnodes, indir, outdir)
-  !call probin_init('/home/namdi/Documents/School/UNC/Parallel_Time/Code/fpfasst/PFASST/examples/electro/probin.nml')  
+  call parse_cmd_line(nthreads, accuracy, solver, iterations, nlevs, fnodes, indir, outdir)  
 
   ! for the debugger
-  !nthreads 	= 4
-  !solver 	= 3
+  !nthreads 	= 8
+  !solver 	= SOLVE_FMM
   !accuracy 	= 3
   !iterations 	= 4
-  !nlevs		= 2
+  !nlevs		= 1
   !fnodes	= 5
 
   !indir = "/home/namdi/Documents/School/UNC/Parallel_Time/Data/test/t_0"

@@ -44,7 +44,7 @@ dipstr_src  	= np.ones( nsources, dtype=np.dtype('c16') )
 dipvec_src	= np.zeros( pos_src.shape, dtype=np.dtype('f8') )
 mass_src	= np.ones( nsources, dtype=np.dtype('f8') )
 
-dt = 0.01
+dt = 0.001
 length = 1.0
 
 max_charge = 1.0

@@ -243,7 +243,8 @@ subroutine set_solver_fmm_near(obj)
     obj%ntargets	= ntargets
     obj%N		= nsources + ntargets
     obj%nthreads	= nthreads
-    obj%shape		= [ 2, obj%N, 3 ]
+    !obj%shape		= [ 2, obj%N, 3 ] ! this is not correct
+    obj%shape		= [ 3, obj%N, 2 ]
     obj%size		= size(obj%shape)
 
     obj%solver		= solver

@@ -23,10 +23,11 @@ LIBPFASST=../libpfasst
 
 # for compiling
 #LD_LIBRARY_PATH=/home/namdi/Documents/School/UNC/Parallel_Time/Code/fpfasst/libpfasst/examples/electro/lib
-PYTHONPATH=/home/namdi/Documents/School/UNC/Parallel_Time/Code/fpfasst/libpfasst
+#PYTHONPATH=${PYTHONPATH}:${LIBPFASST}
 
-#LD_LIBRARY_PATH=$(pwd)/lib
-#PYTHONPATH=${LIBPFASST}
+PYTHONPATH=${PYTHONPATH}:/home/namdi/Documents/School/UNC/Parallel_Time/Code/fpfasst/libpfasst
+LD_LIBRARY_PATH=$(pwd)/lib
+
 
 export MY_DATA_DIR
 export MR_NEAR

@@ -258,7 +258,6 @@ contains
     iffldsrc_mpole	= 0
     iffldtarg_mpole	= 0    
 
-    
     !------------------------------------------
 
     
@@ -297,8 +296,7 @@ contains
 	!endif 
 
       !endif !(solver .eq. SOLVE_FMM_NEAR)
-    
-      
+          
       call fmm(ier, tree%iprec, nsources, pos_src, ifcharge, charge_src, ifdipole, dipstr_src, dipvec_src, &
 		ifpotsrc, pot_src, iffldsrc, field_src, ntargets, pos_targ, ifpottarg, pot_targ, iffldtarg, &
 		field_targ, tree%ladder, tree%nlev, tree%nboxes, tree%nbox, tree%epsfmm, tree%lused7, nthreads, tree%iisource, &
@@ -314,22 +312,16 @@ contains
     endif ! (solver .eq. SOLVE_DIRECT)
 
     ! combine the near and far field for the respective FMM
-    if ( solver .eq. SOLVE_FMM_NEAR .or. solver .eq. SOLVE_FMM_NEAR_FAR) then
-      do i=1, nsources      
-	!field_src(1, i) = field_near_src(1,i) + field_far_src(1,i)
-	!field_src(2, i) = field_near_src(2,i) + field_far_src(2,i)
-	!field_src(3, i) = field_near_src(3,i) + field_far_src(3,i)
-	field_src(1:3,i) = field_near_src(1:3, i) + field_far_src(1:3, i)
-      enddo
+    !if ( solver .eq. SOLVE_FMM_NEAR .or. solver .eq. SOLVE_FMM_NEAR_FAR) then
+      !do i=1, nsources      	
+	!field_src(1:3,i) = field_near_src(1:3, i) + field_far_src(1:3, i)
+      !enddo
 
-      do i=1, ntargets
-	!field_targ(1, i) = field_near_targ(1,i) + field_far_targ(1,i)
-	!field_targ(2, i) = field_near_targ(2,i) + field_far_targ(2,i)
-	!field_targ(3, i) = field_near_targ(3,i) + field_far_targ(3,i)
-	field_targ(1:3, i) = field_near_targ(1:3,i) + field_far_targ(1:3,i)
-      enddo
+      !do i=1, ntargets	
+	!field_targ(1:3, i) = field_near_targ(1:3,i) + field_far_targ(1:3,i)
+      !enddo
       
-    endif
+    !endif
 
     ! calculate the accelerations
     call calc_accel(accel_src, field_src, charge_src, nsources) 
@@ -348,7 +340,7 @@ contains
     deallocate( pot_mpole_targ )
     deallocate( field_mpole_src )
     deallocate( field_mpole_targ )
-    !------------------------------------
+    
   end subroutine eval_f1
 
   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

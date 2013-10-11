@@ -1,10 +1,28 @@
 This README shows how to use the following  aspects of pfasst:
 
-  1. how to COMPILE libpfasst (the fortran pfasst library)
-  2. how to COMPILE the FMM + executable (electro and ./main.exe, respectively)
-  3. how to RUN pfasst
-  4. how to display output
-  5. how to run convergence tests
+  1. how to upload the files into killdevil
+  2. how to COMPILE libpfasst (the fortran pfasst library)
+  3. how to COMPILE the FMM + executable (electro and ./main.exe, respectively)
+  4. how to RUN pfasst
+  5. how to display output
+  6. how to run convergence tests
+
+#--------------------------------------------------
+# How to upload the files into killdevil
+#--------------------------------------------------
+
+1. Go to the correct filsepace:
+  $ cd /nas02/brandonn/fpfasst
+
+2. To access the repository from killdevil
+  $ curl -u 'namdi' -L -o electro.tar.gz https://api.github.com/repos/namdi/electro/tarball
+
+3. To extract the files:
+  $ tar zxvf electro.tar.gz
+
+4. rm -r electro
+
+5. mkdir namdi-electro-"..." electro
 
 #--------------------------------------------------
 # How to COMPILE libpfasst and electro
@@ -31,18 +49,25 @@ This README shows how to use the following  aspects of pfasst:
 # ON KILLDEVIL:
 #
 
-1. Make sure you are using an INTEL compiler with mvapich
+1. Make sure you are using an INTEL compiler with mvapich2
 
 2. Go to /libpfasst directory
 
 3. Create a makefile.killdevil.defs file with these contents:
   FFLAGS= -module build -g -cpp #-fast (optional for optimization)
 
-4. Run makefile
+4. Change the compilers (intel compiler):
+    FC = mpif90
+    CC = mpicc
+    AR = ar rcs
+    PY = python
+    NOSE = nosetests
 
-5. Go to /electro directory
+5. Run makefile
 
-6. In /electro run 
+6. Go to /electro directory
+
+7. In /electro run 
   $ . my_activate
   Make sure the variables are pointing to the correct directories
 
@@ -70,15 +95,15 @@ Optional: Do make gcc47 in libpfasst to get the gcc4.7 compiler (If you need it)
 
 Running serial SDC (i.e pfasst with 1 level):
     
-    $ mpirun -n 1 ./main.exe 4 $FMM 3 1 9 $MY_DATA_DIR/test/t_0 $MY_DATA_DIR/test
+    $ mpirun -n 1 ./main.exe 4 $FMM 3 5 1 9 $MY_DATA_DIR/test/t_0 $MY_DATA_DIR/test
 
 Running pfasst.
 
-    $ mpirun -n 8 ./main.exe 4 $FMM 3 2 5 $MY_DATA_DIR/test/t_0 $MY_DATA_DIR/test
+    $ mpirun -n 8 ./main.exe 4 $FMM 3 5 2 5 $MY_DATA_DIR/test/t_0 $MY_DATA_DIR/test
 
     Command Arguments (have to be in this specific order):
-    nthreads		solver			accuracy	level	fine nodes
-    input directory	output directory
+    nthreads		solver			accuracy		iterations
+    level		fine nodes		input directory		output directory
 
     mpirun -n 8: 		run using 8 MPI nodes
     nthreads: 4 		run using 4 OpemMP nodes per MPI node. Thus, the pfasst example is running 8 groups of 4 nodes.

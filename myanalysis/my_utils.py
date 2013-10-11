@@ -69,7 +69,7 @@ def parse_cmd_line():
     nthreads = int(options.nthreads)  
     
   if options.distribution is None:
-    distribution = 0
+    distribution = 2  # the cube
   else:
     distribution = int(options.distribution)
   

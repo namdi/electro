@@ -1,0 +1,28 @@
+#!/bin/csh                                                                                                                                            
+# this path code sets some environmental variables that can be accessed from other shell scripts                                                      
+# For this code to run, one must run it as:                                                                                                           
+# $ source kd_activate                                                                                                                                
+
+#-------------------------------                                                                                                                      
+# C Shell                                                                                                                                             
+#------------------------------                                                                                                                       
+
+# the data directory is machine specific                                                                                                              
+setenv MY_DATA_DIR /lustre/scr/b/r/brandonn/Data
+
+# solvers                                                                                                                                             
+setenv MR_NEAR 1        # the Multirate FMM used in PFASST                                                                                            
+setenv MR_FMM 2         # the FMM calculating far and local field separately                                                                          
+setenv FMM 3            # the full FMM                                                                                                                
+setenv DIRECT 4         # the direct solver                                                                                                           
+
+# the directory for libpfasst                                                                                                                         
+#set LIBPFASST = ../libpfasst                                                                                                                         
+set LIBPFASST = /nas02/home/b/r/brandonn/fpfasst/libfasst
+
+# for compiling                                                                                                                                       
+setenv LD_LIBRARY_PATH ${LD_LIBRARY_PATH}:/nas02/apps/intel-14.0/cc/composer_xe_2013_sp1.0.080/compiler/lib/intel64
+
+setenv PYTHONPATH ${PYTHONPATH}:${LIBPFASST}
+
+# if this does not work do: export PYTHONPATH=/path/to/libpfasst instead of breaking the command up into two                 
