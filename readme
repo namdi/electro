@@ -1,0 +1,224 @@
+This README shows how to use the following  aspects of pfasst:
+
+  1. how to upload the files into killdevil
+  2. how to COMPILE libpfasst (the fortran pfasst library)
+  3. how to COMPILE the FMM + executable (electro and ./main.exe, respectively)
+  4. how to RUN pfasst
+  5. how to display output
+  6. how to run convergence tests
+
+#---------------------------------------------
+# To Compile Libpfasst
+#---------------------------------------------
+
+FOR KILLDEVIL:
+
+1. need to use mvapich2_gcc/4.8.1 and python/2.7.1 
+
+For All layouts:
+
+In libpfasst/src/pf_explicit.f90
+
+Add the following lines:
+
+
+In subroutine pf_f1eval_p(y, t, level, ctx, f1, m)
+
+
+  !Namdi: add this . Also add m to the argument list
+  integer(c_int), intent(in), optional :: m
+
+In subroutine explicit_evaluate(F, t, m)
+
+  ! Namdi: added last argument
+  call exp%f1eval(F%Q(1), t0, F%level, F%ctx, F%F(1,1), 1, F%nodes, F%nnodes)
+
+  ! Namdi: added last argument
+  call exp%f1eval(F%Q(m+1), t, F%level, F%ctx, F%F(m+1,1), m+1, F%nodes, F%nnodes)
+
+In subroutine explicit_evaluate(F, t, m)
+
+  !Namdi: changed this to add m
+  call exp%f1eval(F%Q(m), t, F%level, F%ctx, F%F(m,1), m, F%nodes, F%nnodes)
+
+#--------------------------------------------------
+# How to upload the files into killdevil
+#--------------------------------------------------
+
+1. Go to the correct filsepace:
+  $ cd /nas02/home/b/r/brandonn/fpfasst
+
+2. To access the repository from killdevil
+  $ curl -u 'namdi' -L -o electro.tar.gz https://api.github.com/repos/namdi/electro/tarball
+
+3. To extract the files:
+  $ tar zxvf electro.tar.gz
+
+4. rm -r electro
+
+5. mkdir namdi-electro-"..." electro
+
+#--------------------------------------------------
+# How to COMPILE libpfasst and electro
+#--------------------------------------------------
+
+#
+# ON ANY MACHINE:
+#
+
+1. Go to /libpfasst/Makefile
+  Change the LIBPFASST library path to wherever it is in killdevil.
+  Chagne the PFDEV to the directory that containst libpfasst
+
+2. Run makefile in libpfasst
+
+3. Go to /electro
+
+4. $ . my_activate 
+  Make sure the variables are pointing to the correct directories
+
+5. Run makefile in electro
+
+6. Run the following so the python routines can access the FMM code
+
+$ cd pyobj
+
+$ sh create_lib.sh
+
+#
+# ON KILLDEVIL:
+#
+
+1. These are the modules that worked:
+
+  Module list:
+  1.  mvapich2_gcc/4.8.1	2. python/2.7.1
+
+2. Make sure you are using an INTEL compiler with mvapich2
+
+3. Go to /libpfasst directory
+
+4. Create a makefile.killdevil.defs file with these contents (for the intel compiler):
+  FFLAGS= -module build -g -cpp #-fast (optional for optimization)
+
+5. Change the compilers (intel compiler) in makefile.defaults (in libpfasst):
+    FC = mpif90
+    CC = mpicc
+    AR = ar rcs
+    PY = python
+    NOSE = nosetests
+
+6. Run makefile
+
+7. Go to /electro directory
+
+8. In /electro run 
+  $ csh kd_activate
+  Make sure the variables are pointing to the correct directories
+
+9. Run the following so the python routines can access the FMM code
+
+$ cd pyobj
+
+$ sh create_lib.sh
+
+Optional: Do make gcc47 in libpfasst to get the gcc4.7 compiler (If you need it). See other examples in libpfasst/Makefile.external
+
+#--------------------------------------------------
+# How to RUN the pfasst + FMM
+#--------------------------------------------------
+
+1. Go to /electro/myanalysis
+
+2. Create the initial condition
+    $ python data_script.py -d 2 -b 20 -n 2000 -m 3 -o $MY_DATA_DIR/test
+
+    d: distribution of initial condition dis
+    b: number of timesteps
+    n: number of source particles
+    m: number of target particles (tracer particles)
+    o: The output directory. The initial data will be stored in $MY_DATA_DIR/test/t_0
+
+3. Go to /electro ($ cd ..)
+
+4. Run pfasst
+
+Running serial SDC (i.e pfasst with 1 level):
+    
+    $ mpirun -n 1 ./main.exe 4 $FMM 3 5 1 9 $MY_DATA_DIR/test/t_0 $MY_DATA_DIR/test
+
+Running pfasst.
+
+    $ mpirun -n 8 ./main.exe 4 $FMM 3 5 2 5 $MY_DATA_DIR/test/t_0 $MY_DATA_DIR/test
+
+    Command Arguments (have to be in this specific order):
+    nthreads		solver			accuracy		iterations
+    level		fine nodes		input directory		output directory
+
+    mpirun -n 8: 		run using 8 MPI nodes
+    nthreads: 4 		run using 4 OpemMP nodes per MPI node. Thus, the pfasst example is running 8 groups of 4 nodes.
+    solver: $FMM		use the full FMM solver
+    accuracy: 3			the accuracy of the FMM solver
+    iterations: 5		the number of PFASST iterations is 5
+    nlevels: 2			the number of pfasst levels is 2
+    fine nodes: 9		The number of fine nodes per timestep. Useful for running serial SDC only. In this case it is 9.				
+    $MY_DATA_DIR/test/t_0	the input directory, i.e. the initial condition directory
+    $MY_DATA_DIR/test		the output directory (this is optional)
+    
+#--------------------------------------------------
+# How to profile	
+#--------------------------------------------------
+1. enter -pg in makefiles for compiling and linking
+2. $ ./main.exe
+3. $ gprof ./main.exe ----> gmon.out
+4. $ gprof main.exe > main.profile
+5. $ python gprof2dot.py main.profile > dotfile.dot
+6. $ dot -Tpng dotfile.dot -o output.png
+
+To see the subroutine that takes a long time ( for example counter() ):
+$ cd ..
+$ grep counter ./electro -r
+
+#--------------------------------------------------
+# How to view output
+#--------------------------------------------------
+
+For convergence/ error plotting
+
+1. Go to pf directory
+
+2. Need to change convergence.py to my_convergence.py to take into account that
+the solution y takes account position as well as velcoity.
+
+3. need to add "import my_convergence" to __init__().py
+
+4. Keep in mind that original plot() plots error in semilogy scaling
+
+5. Add a plot for regular scaling
+
+6. Add a function to caclulate relative error
+
+#--------------------------------------------------
+# How to see temporal multirate FMM behavior
+#--------------------------------------------------
+
+To see the graph for the FMM's temporal multirate behior, do the following
+
+1. create initial data
+
+$ python data_script.py -d 2 -n 16000 -m 16000 -o test
+
+2. Go to the following directory
+
+$ cd Documents/School/UNC/Parallel_Time/Code/fpfasst/electro/pysrc
+
+3. Run the simulation
+
+$ python driver_stfmm_test.py -t 4 -i $MY_DATA_DIR/test -o $MY_DATA_DIR/test
+
+4. Run the least squares analysis code
+
+$ python least_sq.py
+#--------------------------------------------------
+# How to run convergence tests
+#--------------------------------------------------

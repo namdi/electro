@@ -1,0 +1,17 @@
+
+&PARAMS
+    
+  nthreads_omp 	= 1
+  nsteps 	= 1
+  dt 		= 1.0
+
+  solver	= 3		! direct-> 1, fmm ->2, mrfmm -> 3
+  accuracy	= 3 
+  nnodes	= 5
+  nbox		= -1
+
+  indir		= "/home/namdi/Documents/School/UNC/Parallel_Time/Data/test/t_0"
+  outdir	= "/home/namdi/Documents/School/UNC/Parallel_Time/Data/test"  
+
+  pfasst_nml = "pfasst.nml"
+/
